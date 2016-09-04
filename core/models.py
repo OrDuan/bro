@@ -10,17 +10,18 @@ class BaseModel(models.Model):
 
 
 class BroType(BaseModel):
-    """details about specific Bro"""
+    """Details about specific Bro"""
     name = models.TextField()  # The to show to the users
     code = models.TextField()  # When we have to associate it with inner app tasks(like file names, css classes etc)
 
 
 class Message(BaseModel):
-    """A bro message from one user to other"""
+    """A bro message from one user to anther"""
     sender = models.ForeignKey(User, related_name='sender')
     receiver = models.ForeignKey(User, related_name='receiver')
     bro = models.ForeignKey(BroType)
 
 
 class UserProfile(BaseModel):
+    """Additional info for the User model"""
     user = models.OneToOneField(User, on_delete=models.CASCADE)
