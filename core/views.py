@@ -37,8 +37,8 @@ def get_dashboard(request):
     user = request.user
     response = {
         'totalMessages': Message.objects.filter(receiver=user).count(),
-        'totalMessagesToday': Message.get_messages_from_last_day().count(),
-        'totalMessagesLastWeek': Message.get_messages_from_last_week().count(),
+        'totalMessagesToday': Message.get_messages_from_last_day().filter(receiver=user).count(),
+        'totalMessagesLastWeek': Message.get_messages_from_last_week().filter(receiver=user).count(),
         'totalBros': user.userprofile.bros.count(),
     }
 
