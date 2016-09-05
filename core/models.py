@@ -24,11 +24,17 @@ class BroType(BaseModel):
         }
 
 
+class UserProfile(BaseModel):
+    """Additional info for the User model"""
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    bros = models.ManyToManyField(BroType)
+
+
 class Message(BaseModel):
     """A bro message from one user to anther"""
     created_at = models.DateTimeField(auto_now_add=True)
-    sender = models.ForeignKey(User, related_name='sender')
-    receiver = models.ForeignKey(User, related_name='receiver')
+    sender = models.ForeignKey(UserProfile, related_name='sender')
+    receiver = models.ForeignKey(UserProfile, related_name='receiver')
     bro = models.ForeignKey(BroType)
 
     def to_dict(self):
@@ -55,8 +61,3 @@ class Message(BaseModel):
         """Returns QuerySet object with all the messages from last week"""
         return Message.get_message_from_n_date(7)
 
-
-class UserProfile(BaseModel):
-    """Additional info for the User model"""
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    bros = models.ManyToManyField(BroType)

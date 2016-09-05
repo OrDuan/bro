@@ -7,7 +7,7 @@ def get_messages(request):
     """Returns last n messages for specific user"""
     user = request.user  # TODO make sure the user is token authnticated
     page = request.GET.get('page', 1)
-    paginator = Paginator(Message.objects.filter(receiver=user), 40)
+    paginator = Paginator(Message.objects.filter(receiver=user.userprofile), 40)
 
     response = {
         'status': 'ok',
