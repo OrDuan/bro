@@ -40,6 +40,12 @@ class UserProfile(BaseModel):
         self.auth_token = UserProfile._generate_auth_token()
         return self.auth_token
 
+    def verify_has_bro(self, bro_id):
+        """
+        Verify the user has this bro_id
+        """
+        return bro_id in (bro.id for bro in self.bros)
+
 
 class Message(BaseModel):
     """A bro message from one user to anther"""

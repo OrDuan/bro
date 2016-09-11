@@ -1,4 +1,4 @@
-from core.models import Message
+from core.models import Message, UserProfile
 from django.contrib.auth import authenticate
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
@@ -8,7 +8,7 @@ from django.http import JsonResponse
 @login_required
 def get_messages(request):
     """Returns last n messages for specific user"""
-    user = request.user  # TODO make sure the user is token authnticated
+    user = request.user
     page = request.GET.get('page', 1)
     paginator = Paginator(Message.objects.filter(receiver=user.userprofile), 40)
 
@@ -23,9 +23,31 @@ def get_messages(request):
 
 
 @login_required
+def create_messages(request):
+    """Returns last n messages for specific user"""
+    user = request.user
+    response = {'status': 'ok'}
+
+    if not user.userprofile.verify_has_bro(request.POST['broId']):
+        response['status'] = 'error'
+        response['message'] = 'You don\'t have this bro'
+        return JsonResponse(response)
+
+    receiver = UserProfile.objects.get(pk=request.POST['receiverId'])
+
+    Message.objects.create(
+        sender=user.userprofile,
+        receiver=receiver,
+        bro_id=request.POST['broId'],
+    )
+
+    return JsonResponse(response)
+
+
+@login_required
 def get_bros(request):
     """Returns bros that the current user have"""
-    user = request.user  # TODO make sure the user is token authnticated
+    user = request.user
     bros = user.userprofile.bros.all()
 
     response = {
