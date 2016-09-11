@@ -1,8 +1,11 @@
 from core.models import Message
+from django.contrib.auth import authenticate
+from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.http import JsonResponse
 
 
+@login_required
 def get_messages(request):
     """Returns last n messages for specific user"""
     user = request.user  # TODO make sure the user is token authnticated
@@ -19,6 +22,7 @@ def get_messages(request):
     return JsonResponse(response)
 
 
+@login_required
 def get_bros(request):
     """Returns bros that the current user have"""
     user = request.user  # TODO make sure the user is token authnticated
@@ -32,6 +36,7 @@ def get_bros(request):
     return JsonResponse(response)
 
 
+@login_required
 def get_dashboard(request):
     """Returns all the data for the dashboard"""
     user = request.user
@@ -43,3 +48,34 @@ def get_dashboard(request):
     }
 
     return JsonResponse(response)
+
+
+def login(request):
+    """
+    Login a user with a user auth token
+    """
+    username = request.POST['username']
+    password = request.POST['password']
+    response = {'status', 'ok'}
+
+    # Check the username and password, could be a facebook token also
+    user = authenticate(username=username, password=password)
+
+    if user:
+        if not user.userprofile.auth_token:
+            user.userprofile.set_new_auth_token()
+            user.save()
+
+        response['token'] = user.userprofile.auth_token
+    else:
+        response['status'] = 'error'
+        response['message'] = 'Invalid login credentials'
+        return response
+
+
+def check_version(request):
+    """
+    Check the current user app version against the server version.
+    We can use this to force update for users.
+    """
+    pass

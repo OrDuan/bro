@@ -1,5 +1,7 @@
 import uuid
 from datetime import timedelta
+import binascii
+import os
 
 from django.contrib.auth.models import User
 from django.db import models
@@ -27,7 +29,16 @@ class BroType(BaseModel):
 class UserProfile(BaseModel):
     """Additional info for the User model"""
     user = models.OneToOneField(User, on_delete=models.CASCADE)
+    auth_token = models.CharField(max_length=40, null=True, blank=True)
     bros = models.ManyToManyField(BroType)
+
+    @staticmethod
+    def _generate_auth_token():
+        return binascii.hexlify(os.urandom(20)).decode()
+
+    def set_new_auth_token(self):
+        self.auth_token = UserProfile._generate_auth_token()
+        return self.auth_token
 
 
 class Message(BaseModel):
