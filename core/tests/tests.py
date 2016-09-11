@@ -7,7 +7,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from core.models import Message
-from core.tests.factories import MessageFactory, UserProfileFactory
+from core.tests.factories import MessageFactory, UserProfileFactory, BroTypeFactory
 
 
 class TestMessageCase(TestCase):
@@ -42,10 +42,10 @@ class TestViewsCase(TestCase):
         total_messages = per_page+1  # We want to have 2 pages
         messages = MessageFactory.create_batch(total_messages, receiver=self.user_profile)
 
-        json_data = self.client.post(reverse('core.get_messages'))
-        json_data = json_data.json()
+        response = self.client.post(reverse('core.get_messages'))
+        json_data = response.json()
 
-        self.assertEqual(json_data.status_code, 200)
+        self.assertEqual(response.status_code, 200)
         self.assertEqual(json_data['status'], 'ok')
         self.assertEqual(json_data['totalMessages'], len(messages))
         self.assertEqual(json_data['totalPages'], 2)
@@ -53,3 +53,20 @@ class TestViewsCase(TestCase):
         # TODO why the hell sender id is 'a8edf470b66049beb7b0e74f5266f42d'
         # TODO and message id is 'f59a98bd-0c27-4b15-9694-6eee9d75e65d'??
 
+    def test_create_message(self):
+        receiver = UserProfileFactory()
+        bro = BroTypeFactory()
+        self.user_profile.bros.add(bro)
+        self.user_profile.save()
+
+        response = self.client.post(reverse('core.create_messages'), {
+            'broId': bro.id,
+            'receiverId': receiver.id,
+        }).json()
+
+        new_message = Message.objects.first()
+        self.assertEqual(Message.objects.count(), 1)
+        self.assertEqual(str(new_message.id), response['message_id'])
+        self.assertEqual(new_message.bro, bro)
+        self.assertEqual(new_message.receiver, receiver)
+        self.assertEqual(new_message.sender, self.user_profile)

@@ -44,7 +44,7 @@ class UserProfile(BaseModel):
         """
         Verify the user has this bro_id
         """
-        return bro_id in (bro.id for bro in self.bros)
+        return self.bros.filter(id=bro_id).exists()
 
 
 class Message(BaseModel):

@@ -35,11 +35,13 @@ def create_messages(request):
 
     receiver = UserProfile.objects.get(pk=request.POST['receiverId'])
 
-    Message.objects.create(
+    message = Message.objects.create(
         sender=user.userprofile,
         receiver=receiver,
         bro_id=request.POST['broId'],
     )
+
+    response['message_id'] = message.id
 
     return JsonResponse(response)
 
