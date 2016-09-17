@@ -17,12 +17,19 @@ class BroType(BaseModel):
     """Details about specific Bro"""
     name = models.TextField()  # The to show to the users
     code = models.TextField()  # When we have to associate it with inner app tasks(like file names, css classes etc)
+    note = models.TextField(null=True, blank=True)  # Where to get, how rare etc
+
+    # How many bros a user need to get it, if null - means you get it from different way then just
+    # send bros, future implementation.
+    bros_needed = models.IntegerField(null=True, blank=True)
 
     def to_dict(self):
         return {
             'id': self.id,
             'name': self.name,
             'code': self.code,
+            'note': self.note,
+            'brosNeeded': self.bros_needed,
         }
 
 
@@ -46,6 +53,22 @@ class UserProfile(BaseModel):
         """
         return self.bros.filter(id=bro_id).exists()
 
+    def get_next_bro_type(self):
+        """
+        Returns the next bro the user will get if he keep sending messages
+        """
+        # TODO Is it possible to do it in one db hit?
+        current_count = self.sender.count()
+        return BroType.objects.filter(bros_needed__gt=current_count).order_by('bros_needed').first()
+
+    def has_new_bro_type(self):
+        """
+        Return BroType of right now the user has exactly as much as needed for
+        the new BroType. If not, return None.
+        """
+        # TODO Is it possible to do it in one db hit?
+        return BroType.objects.filter(bros_needed=self.sender.count()).first()
+
 
 class Message(BaseModel):
     """A bro message from one user to anther"""
@@ -64,17 +87,24 @@ class Message(BaseModel):
 
     @staticmethod
     def get_message_from_n_date(days):
-        """Returns QuerySet object with all the messages from last n days"""
+        """
+        Returns QuerySet object with all the messages from last n days
+        """
         time_delta = timezone.now() - timedelta(days=days)
         return Message.objects.filter(created_at__gte=time_delta)
 
     @staticmethod
     def get_messages_from_last_day():
-        """Returns QuerySet object with all the messages from last day"""
+        """
+        Returns QuerySet object with all the messages from last day
+        """
         return Message.get_message_from_n_date(1)
 
     @staticmethod
     def get_messages_from_last_week():
-        """Returns QuerySet object with all the messages from last week"""
+        """
+        Returns QuerySet object with all the messages from last week
+        """
         return Message.get_message_from_n_date(7)
+
 

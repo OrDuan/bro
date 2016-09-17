@@ -33,8 +33,8 @@ def create_messages(request):
         response['message'] = 'You don\'t have this bro'
         return JsonResponse(response)
 
+    # Create the new messaged
     receiver = UserProfile.objects.get(pk=request.POST['receiverId'])
-
     message = Message.objects.create(
         sender=user.userprofile,
         receiver=receiver,
@@ -43,6 +43,12 @@ def create_messages(request):
 
     response['message_id'] = message.id
 
+    # Check if the user got new BroType!
+    new_bro_type = user.userprofile.has_new_bro_type()
+    if new_bro_type:
+        user.userprofile.bros.add(new_bro_type)
+        user.save()
+        response['newBroType'] = new_bro_type.to_dict()
     return JsonResponse(response)
 
 
