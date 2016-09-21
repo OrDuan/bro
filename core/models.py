@@ -40,6 +40,7 @@ class UserProfile(BaseModel):
     """Additional info for the User model"""
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     auth_token = models.CharField(max_length=40, null=True, blank=True)
+    fb_user_id = models.CharField(max_length=25, null=True, blank=True)
     bros = models.ManyToManyField(BroType)
 
     @staticmethod
