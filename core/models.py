@@ -1,9 +1,12 @@
+import json
+import urllib
 import uuid
 from datetime import timedelta
 import binascii
 import os
 
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 
@@ -44,7 +47,11 @@ class UserProfile(BaseModel):
         return binascii.hexlify(os.urandom(20)).decode()
 
     def set_new_auth_token(self):
-        self.auth_token = UserProfile._generate_auth_token()
+        """
+        Set new token if the user did not have one, if he did just return the token
+        """
+        if not self.auth_token:
+            self.auth_token = UserProfile._generate_auth_token()
         return self.auth_token
 
     def verify_has_bro(self, bro_id):
@@ -68,6 +75,42 @@ class UserProfile(BaseModel):
         """
         # TODO Is it possible to do it in one db hit?
         return BroType.objects.filter(bros_needed=self.sender.count()).first()
+
+    def get_fb_user_data(self, access_token):
+        """
+        After the use logged ina nd authorized our app we get `fb_token`.
+        With this token we requesting the user profile picture and name.
+        """
+        batch_request = '[{"method":"GET","relative_url":"me/picture?type=large"}, ' \
+                        '{"method":"GET","relative_url":"me"}]'
+        batch_request_encoded = urllib.parse.quote_plus(batch_request)
+
+        # Prepare the batch and access_token params
+        data_params = 'access_token={}&batch={}'.format(access_token, batch_request_encoded)
+        data_params_encoded = data_params.encode()
+
+        # This will POST the request
+        response = urllib.request.urlopen('https://graph.facebook.com/', data_params_encoded)
+
+        # Get the results
+        data = response.read()
+        data = json.loads(data.decode("utf-8"))
+
+        # Make sure this is out app
+        if json.loads(data[1]['body'])['id'] != '1240840989293723':
+            raise ValidationError('Not a valid app')
+
+        # Parse the response so we only return what we want
+        profile_picture = data[0]['headers'][6]['value']
+        user = json.loads(data[2]['body'])
+
+        parsed_data = {
+            'user_id': user['id'],
+            'first_name': user['name'].split()[0],
+            'last_name': user['name'].split()[1],
+            'picture_url': profile_picture,
+        }
+        return parsed_data
 
 
 class Message(BaseModel):
