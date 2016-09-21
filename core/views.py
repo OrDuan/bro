@@ -1,6 +1,8 @@
+import urllib
+
 from core.models import Message, UserProfile
-from django.contrib.auth import authenticate
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.http import JsonResponse
 
@@ -84,23 +86,28 @@ def login(request):
     """
     Login a user with a user auth token
     """
-    username = request.POST['username']
-    password = request.POST['password']
     response = {'status', 'ok'}
-
-    # Check the username and password, could be a facebook token also
-    user = authenticate(username=username, password=password)
-
-    if user:
-        if not user.userprofile.auth_token:
-            user.userprofile.set_new_auth_token()
-            user.save()
-
-        response['token'] = user.userprofile.auth_token
-    else:
+    user = request.user
+    try:
+        fb_data = user.userprofile.get_fb_user_data()
+    except ValidationError:
+        # TODO email admin?
         response['status'] = 'error'
-        response['message'] = 'Invalid login credentials'
         return response
+    except urllib.error.HTTPError:
+        response['status'] = 'error'
+        return response
+
+    # Set new token and update facebook details
+    token = user.userprofile.set_new_auth_token()
+    user.first_name = fb_data['first_name']
+    user.last_name = fb_data['last_name']
+    user.userprofile.fb_user_id = fb_data['user_id']
+    user.save()
+    user.userprofile.save()
+
+    response['token'] = token
+    return response
 
 
 def check_version(request):
